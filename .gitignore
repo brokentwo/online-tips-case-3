@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.env
+payments_out.csv
+payment_index.csv
+audit_out.csv
+qr_out.csv
+*.tmp
+.DS_Store

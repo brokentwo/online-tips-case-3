@@ -1,0 +1,292 @@
+# API платформы чаевых — кейс 3
+#
+# Прототип консольный: его действия pay, create, confirm, cancel, qr_info, qr_generate и report
+# соответствуют этим адресам и возвращают те же HTTP-коды и поля.
+
+openapi: 3.0.3
+info:
+  title: Tips Platform
+  version: "1.0.0"
+  description: Онлайн-чаевые для сети «Вкус-Сервис»
+
+servers:
+  - url: http://localhost:8083
+
+components:
+  schemas:
+    QRPayload:
+      type: object
+      required: [merchant_id, employee_id, receipt_id, nonce, exp, signature]
+      properties:
+        merchant_id: {type: string, pattern: '^m_[0-9]{3}$'}
+        employee_id: {type: string, pattern: '^e_[0-9]{3}$'}
+        receipt_id: {type: string, pattern: '^r_[0-9]{4}$'}
+        nonce: {type: string, pattern: '^[a-f0-9]{6}$'}
+        exp: {type: string, format: date-time}
+        signature: {type: string, pattern: '^[a-f0-9]{16}$'}
+
+    QRCreate:
+      type: object
+      required: [merchant_id, employee_id, receipt_id]
+      properties:
+        merchant_id: {type: string, pattern: '^m_[0-9]{3}$'}
+        employee_id: {type: string, pattern: '^e_[0-9]{3}$'}
+        receipt_id: {type: string, pattern: '^r_[0-9]{4}$'}
+
+    QRCreated:
+      allOf:
+        - $ref: '#/components/schemas/QRPayload'
+        - type: object
+          properties:
+            qr_id: {type: string, pattern: '^qr_[0-9]{3,}$'}
+            pay_url: {type: string, example: 'https://tips.example/pay?qr=qr_101&sig=a1b2c3d4e5f6a7b8'}
+
+    QRResponse:
+      type: object
+      required: [qr_id, merchant_id, employee_id, employee_name, receipt_id, base_amount, currency, tip_options]
+      properties:
+        qr_id: {type: string, example: qr_001}
+        merchant_id: {type: string, example: m_001}
+        merchant_name: {type: string, example: Вкус-Сервис Тверская}
+        employee_id: {type: string, example: e_001}
+        employee_name: {type: string, example: Иванов И.}
+        receipt_id: {type: string, example: r_1001}
+        base_amount: {type: number, format: decimal, example: 637.00}
+        currency: {type: string, example: RUB}
+        tip_options:
+          type: array
+          items: {type: integer}
+          example: [0, 5, 10, 15, 20]
+
+    TipCreate:
+      type: object
+      required: [qr_id, receipt_id, base_amount, tip_pct]
+      properties:
+        qr_id: {type: string, example: qr_001}
+        receipt_id: {type: string, example: r_1001}
+        signature: {type: string, pattern: '^[a-f0-9]{16}$', description: Подпись из ссылки на оплату}
+        base_amount: {type: number, format: decimal, exclusiveMinimum: true, minimum: 0, maximum: 1000000, example: 637.00}
+        tip_pct: {type: number, minimum: 0, maximum: 50, example: 5}
+        tip_amount: {type: number, format: decimal, minimum: 0, description: Своя сумма с экрана 2. Если задана, заменяет процент, но не больше половины чека}
+        idempotency_key: {type: string, description: Создаётся на клиенте при открытии формы, example: 3f1c9a7e}
+
+    Payment:
+      type: object
+      required: [payment_id, status, amount_total, tip_amount]
+      properties:
+        payment_id: {type: string, pattern: '^p_[0-9]{4}$', example: p_0101}
+        status: {type: string, enum: [CREATED, PENDING, SUCCESS, DECLINED, CANCELED]}
+        amount_total: {type: number, format: decimal, example: 668.85}
+        tip_amount: {type: number, format: decimal, example: 31.85}
+        confirm_token: {type: string, description: Нужен для подтверждения и отмены, example: 1f9f6cabcdb89285}
+        error_code: {type: string, nullable: true, example: null}
+
+    ConfirmRequest:
+      type: object
+      required: [confirm_token]
+      properties:
+        confirm_token: {type: string}
+
+    Report:
+      type: object
+      required: [merchant_id, period, tips_total, payments_count, avg_tip_pct, success_rate]
+      properties:
+        merchant_id: {type: string, example: m_001}
+        period: {type: string, example: '2025-11'}
+        tips_total: {type: number, format: decimal, description: Сумма чаевых по статусу SUCCESS, example: 414.85}
+        payments_count: {type: integer, description: Все попытки за период, example: 6}
+        avg_tip_pct: {type: number, description: Средний процент чаевых по статусу SUCCESS, example: 9.0}
+        success_rate: {type: number, description: Доля SUCCESS среди всех попыток, example: 0.83}
+
+    EmployeeReport:
+      type: object
+      required: [employee_id, period, tips_total, payments_count, avg_tip_amount, top_day]
+      properties:
+        employee_id: {type: string, example: e_001}
+        period: {type: string, example: '2025-11'}
+        tips_total: {type: number, format: decimal, example: 83.60}
+        payments_count: {type: integer, example: 2}
+        avg_tip_amount: {type: number, format: decimal, example: 41.80}
+        top_day: {type: string, format: date, nullable: true, example: '2025-11-03'}
+
+    DailyReport:
+      type: object
+      required: [merchant_id, daily]
+      properties:
+        merchant_id: {type: string, example: m_001}
+        daily:
+          type: array
+          items:
+            type: object
+            required: [date, tips_total, payments_count, avg_tip_pct]
+            properties:
+              date: {type: string, format: date, example: '2025-11-01'}
+              tips_total: {type: number, format: decimal, example: 245.90}
+              payments_count: {type: integer, example: 3}
+              avg_tip_pct: {type: number, example: 10.0}
+
+    Error:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code: {type: string, example: INVALID_QR}
+        message: {type: string, example: QR-код недействителен}
+        retryable: {type: boolean, example: false}
+        details: {type: object, additionalProperties: true}
+
+  responses:
+    Failure:
+      description: Ошибка из каталога 08_errors.md
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+
+paths:
+  /health:
+    get:
+      summary: Проверка живости
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {type: object, properties: {status: {type: string}}}
+
+  /api/v1/qr:
+    post:
+      summary: Выпустить QR на чек
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/QRCreate'}
+      responses:
+        '201':
+          description: QR выпущен
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/QRCreated'}
+        '403': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+
+  /api/v1/qr/{qr_id}:
+    get:
+      summary: Данные QR для формы чаевых
+      parameters:
+        - {name: qr_id, in: path, required: true, schema: {type: string}}
+        - {name: sig, in: query, required: true, schema: {type: string}, description: Подпись из ссылки на оплату}
+      responses:
+        '200':
+          description: QR действует
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/QRResponse'}
+        '403': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '410': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+
+  /api/v1/tips:
+    post:
+      summary: Создать платёж с чаевыми
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TipCreate'}
+      responses:
+        '200':
+          description: Повтор с тем же ключом, возвращён существующий платёж
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '201':
+          description: Платёж создан в статусе CREATED
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '403': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '410': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+
+  /api/v1/payments/{id}/confirm:
+    post:
+      summary: Подтвердить платёж. Повторный вызов после таймаута снова опрашивает шлюз
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ConfirmRequest'}
+      responses:
+        '200':
+          description: SUCCESS или PENDING с кодом GATEWAY_TIMEOUT
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '402':
+          description: DECLINED с кодом CARD_DECLINED
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '403': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+
+  /api/v1/payments/{id}/cancel:
+    post:
+      summary: Отменить платёж до подтверждения
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ConfirmRequest'}
+      responses:
+        '200':
+          description: Платёж отменён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '403': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+
+  /api/v1/reports/tips:
+    get:
+      summary: Отчёт по мерчанту или официанту, нужен один из двух параметров
+      parameters:
+        - {name: merchant_id, in: query, required: false, schema: {type: string}}
+        - {name: employee_id, in: query, required: false, schema: {type: string}}
+        - {name: from, in: query, required: true, schema: {type: string, format: date}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Отчёт за период
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Report'
+                  - $ref: '#/components/schemas/EmployeeReport'
+        '403': {$ref: '#/components/responses/Failure'}
+
+  /api/v1/reports/tips/daily:
+    get:
+      summary: Отчёт мерчанта по дням
+      parameters:
+        - {name: merchant_id, in: query, required: true, schema: {type: string}}
+        - {name: from, in: query, required: true, schema: {type: string, format: date}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Отчёт по дням
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DailyReport'}
+        '403': {$ref: '#/components/responses/Failure'}

@@ -1,0 +1,46 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="Схема системы" name="Схема системы">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="860" pageHeight="570" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="staff" value="&lt;b&gt;Мерчант, официант&lt;/b&gt;&lt;br&gt;кабинет: выпуск QR, отчёты" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#FFFFFF;strokeColor=#4A5568;fontSize=13;align=left;spacingLeft=10;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="300" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="client" value="&lt;b&gt;Клиент&lt;/b&gt;&lt;br&gt;телефон, без регистрации&lt;br&gt;сканирует QR, выбирает чаевые" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#FFFFFF;strokeColor=#4A5568;fontSize=13;align=left;spacingLeft=10;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="520" y="40" width="300" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="platform" value="&lt;b&gt;Платформа чаевых&lt;/b&gt;&lt;br&gt;QR: подпись, срок, nonce, чек&lt;br&gt;Платёж: расчёт, статусы, повторы&lt;br&gt;Отчёты и роли" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#E3ECF9;strokeColor=#1F5FBF;fontSize=13;align=left;spacingLeft=10;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="230" width="780" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="storage" value="&lt;b&gt;Хранилище&lt;/b&gt;&lt;br&gt;merchants, employees, qr_links&lt;br&gt;payments_out.csv" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#FFFFFF;strokeColor=#4A5568;fontSize=13;align=left;spacingLeft=10;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="450" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" value="&lt;b&gt;Эмулятор шлюза&lt;/b&gt;&lt;br&gt;0..7 SUCCESS&lt;br&gt;8 DECLINED, 9 TIMEOUT" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#FFFFFF;strokeColor=#4A5568;fontSize=13;align=left;spacingLeft=10;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="310" y="450" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="audit" value="&lt;b&gt;Аудит&lt;/b&gt;&lt;br&gt;audit_out.csv&lt;br&gt;каждый переход и отказ QR" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#FFFFFF;strokeColor=#4A5568;fontSize=13;align=left;spacingLeft=10;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="580" y="450" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="edge0" value="запрос QR на чек, отчёт; в ответ QR и ссылка" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#4A5568;fontSize=12;labelBackgroundColor=#FFFFFF;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.244;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="staff" target="platform">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge1" value="1. скан: qr_id, sig&lt;br&gt;2. чаевые: tip_pct, idempotency_key&lt;br&gt;3. подтверждение: confirm_token" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#4A5568;fontSize=12;labelBackgroundColor=#FFFFFF;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.73;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="client" target="platform">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" value="форма и результат" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#4A5568;fontSize=12;labelBackgroundColor=#FFFFFF;exitX=0.91;exitY=0;exitDx=0;exitDy=0;entryX=0.8;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="platform" target="client">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" value="справочники, QR;&lt;br&gt;строка платежа" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#4A5568;fontSize=12;labelBackgroundColor=#FFFFFF;startArrow=block;startFill=1;exitX=0.205;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="platform" target="storage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4" value="qr_id, nonce;&lt;br&gt;код ответа" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#4A5568;fontSize=12;labelBackgroundColor=#FFFFFF;startArrow=block;startFill=1;exitX=0.55;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="platform" target="gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge5" value="событие из 9 полей" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#4A5568;fontSize=12;labelBackgroundColor=#FFFFFF;exitX=0.895;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="platform" target="audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
