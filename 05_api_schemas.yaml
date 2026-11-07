@@ -67,7 +67,7 @@ components:
         signature: {type: string, pattern: '^[a-f0-9]{16}$', description: Подпись из ссылки на оплату}
         base_amount: {type: number, format: decimal, exclusiveMinimum: true, minimum: 0, maximum: 1000000, example: 637.00}
         tip_pct: {type: number, minimum: 0, maximum: 50, example: 5}
-        tip_amount: {type: number, format: decimal, minimum: 0, description: Своя сумма с экрана 2. Если задана, заменяет процент, но не больше половины чека}
+        tip_amount: {type: number, format: decimal, minimum: 0, description: "Своя сумма с экрана 2. Если задана, заменяет процент, но не больше половины чека"}
         idempotency_key: {type: string, description: Создаётся на клиенте при открытии формы, example: 3f1c9a7e}
 
     Payment:
